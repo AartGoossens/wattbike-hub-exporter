@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrainingCenterDatabase
+    xsi:schemaLocation="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd"
+    xmlns:ns5="http://www.garmin.com/xmlschemas/ActivityGoals/v1"
+    xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2"
+    xmlns:ns2="http://www.garmin.com/xmlschemas/UserProfile/v2"
+    xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns4="http://www.garmin.com/xmlschemas/ProfileExtension/v1">
+    <Activities>
+        <Activity Sport="Biking">
+            <Id>{ACTIVITY_ID}</Id>
+            <Lap StartTime={LAP_STARTTIME}}>
+                <TotalTimeSeconds>{TOTAL_TIME_SECONDS}</TotalTimeSeconds>
+                <DistanceMeters>{DISTANCE_METERS}</DistanceMeters>
+                <MaximumSpeed>{MAXIMUMSPEED}</MaximumSpeed>
+                <Calories>{CALORIES}</Calories>
+                <Intensity>Active</Intensity>
+                <TriggerMethod>Manual</TriggerMethod>
+                <Track>
+                    {TRACKPOINTS}
+                </Track>
+            </Lap>
+            <Creator xsi:type="Device_t">
+                <Name>Wattbike</Name>
+                <UnitId>{WATTBIKE_ID}</UnitId>
+                <ProductID>{WATTBIKE_ID}</ProductID>
+                <Version>
+                    <VersionMajor>2</VersionMajor>
+                    <VersionMinor>20</VersionMinor>
+                    <BuildMajor>0</BuildMajor>
+                    <BuildMinor>0</BuildMinor>
+                </Version>
+            </Creator>
+        </Activity>
+    </Activities>
+    <Author xsi:type="Application_t">
+        <Name>Garmin Connect API</Name>
+        <Build>
+            <Version>
+                <VersionMajor>14</VersionMajor>
+                <VersionMinor>11</VersionMinor>
+                <BuildMajor>0</BuildMajor>
+                <BuildMinor>0</BuildMinor>
+            </Version>
+        </Build>
+        <LangID>en</LangID>
+        <PartNumber>006-D2449-00</PartNumber>
+    </Author>
+</TrainingCenterDatabase>
