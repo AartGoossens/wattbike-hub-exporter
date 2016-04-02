@@ -1,12 +1,13 @@
-                    <Trackpoint>
-                        <Time>{TIMESTAMP}</Time>
-                        <HeartRateBpm xsi:type="HeartRateInBeatsPerMinute_t">
-                            <Value>{HEARTRATE}</Value>
-                        </HeartRateBpm>
-                        <Cadence>{CADENCE}</Cadence>
-                        <Extensions>
-                            <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
-                                <Watts>{POWER}</Watts>
-                            </TPX>
-                        </Extensions>
-                    </Trackpoint>
+          <Trackpoint>
+            <Time>{TIMESTAMP}</Time>
+            <HeartRateBpm xsi:type="HeartRateInBeatsPerMinute_t">
+              <Value>{HEARTRATE}</Value>
+            </HeartRateBpm>
+            <Cadence>{CADENCE}</Cadence>
+            <Extensions>
+              <TPX xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
+                <Speed>0.0</Speed>
+                <Watts>{POWER}</Watts>
+              </TPX>
+            </Extensions>
+          </Trackpoint>
