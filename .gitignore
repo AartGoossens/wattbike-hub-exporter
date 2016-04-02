@@ -25,6 +25,8 @@ var/
 *.egg
 venv/
 *.swp
+.DS_Store
+*.tcx
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
