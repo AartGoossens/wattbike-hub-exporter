@@ -1,5 +1,5 @@
-# wattbike-hub-to-tcx
-Wattbike Hub session to Garmin TCX file converter.
+# Wattbike Hub session exporter
+Script to download sessions from hub.wattbike.com and merge multiple sessions into a single .tcx file.
 
 ## Introduction
 This repository contains scripts to download Wattbike sessions from the [Wattbike Hub](http://hub.wattbike.com) and convert them to .tcx to be able to import them into e.g. [GoldenCheetah](http://www.goldencheetah.org) or [Strava](https://www.strava.com).
@@ -24,11 +24,22 @@ Example of one of my sessions: [http://hub.wattbike.com/ranking/getSessionRows?s
 - Python 3 (Parts of the code might work in Python 2 and I might add Python 2 support in the future)
 - Wattbike Hub account set to 'publicly viewable'. Check this in your [Wattbike Hub settings](http://hub.wattbike.com/account/edit)
 
-## Installation
-COMING SOON
-
 ## Usage
-COMING SOON
+Open a terminal and clone this repository with the following command:
+```
+git clone https://github.com/AartGoossens/wattbike-hub-exporter.git
+```
+`cd` into the code directory with:
+```
+cd wattbike-hub-exporter
+```
+Start a python terminal with `python3` (or `ipython` if you have it installed) and run the following Python commands line by line:
+```python
+from src.workout import Workout
+workout = Workout(session_ids=['session_id1', 'session_id2'])
+workout.export_to_tcx()]
+```
+The exported `.tcx` file is saved in the current directory.
 
 ## Usefull links
 - [Wattbike Hub](http://hub.wattbike.com)
