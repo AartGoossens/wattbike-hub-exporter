@@ -7,38 +7,88 @@ import numpy as np
 from .wattbike_importer import HubClient
 
 
-TCX_BASE = os.path.join(os.path.dirname(os.path.realpath(__file__)), './templates/tcx_base')
-TCX_TRACKPOINT = os.path.join(os.path.dirname(os.path.realpath(__file__)), './templates/tcx_trackpoint')
+BASE_TEMPLATE = os.path.join(os.path.dirname(os.path.realpath(__file__)), './templates/tcx_base')
+TRACKPOINT_TEMPLATE = os.path.join(os.path.dirname(os.path.realpath(__file__)), './templates/tcx_trackpoint')
 
 
 class Workout:
-    def __init__(self, session_id):
-        self.session = HubClient().get_session(session_id)
+    def __init__(self, session_ids):
+        self.sessions = list()
+        for session_id in session_ids:
+            self.sessions.append(HubClient().get_session(session_id))
 
     def __repr__(self):
-        return '<Workout instance :\'{}\'>'.format(self.title)
+        return '<Workout instance containing {} sessions>'.format(len(self.session))
 
-    def _validate(self):
-        assert len(self.session['xAxis']) == len(self.session['hr'])\
-                == len(self.session['cadence']) == len(self.session['power'])
-    
-    def export_to_tcx(self, fname=None):
-        with open(TCX_BASE, 'r') as tcx_base_file:
-            tcx_base = tcx_base_file.read()
+    def export_to_tcx(self, fname=None, session=None):
+        if session:
+            sessions = [session]
+        else:
+            sessions = self.sessions
+        
+        trackpoints = str()
+        min_starttime = datetime.datetime.now()
+        total_time = 0.0
+        total_hr = 0.0
+        hr_max = 0
+        total_cad = 0
+        total_pwr = 0
 
-        with open(TCX_TRACKPOINT, 'r') as tcx_trackpoint_file:
+        for session in sessions:
+            trackpoints += self._tcx_render_trackpoints(session)
+
+            session_start = datetime.datetime.strptime(
+                session['headers']['startDate'], '%Y-%m-%d %H:%M:%S'
+            )
+            if session_start < min_starttime:
+                min_starttime = session_start
+            duration = float(session['headers']['timeTotal'])
+            total_time += duration
+            total_hr += float(session['headers']['hrAvg'])*duration
+            if float(session['headers']['hrPeak']) > hr_max:
+                hr_max = float(session['headers']['hrPeak'])
+            total_cad += float(session['headers']['cadence'])*duration
+            total_pwr += float(session['headers']['powerAvg'])*duration
+
+        tcx_string = self._tcx_render_base(
+            trackpoints=trackpoints,
+            start_time=min_starttime.isoformat(),
+            total_time=int(total_time),
+            avg_hr=int(total_hr/total_time),
+            max_hr=int(hr_max),
+            avg_cad=int(total_cad/total_time),
+            avg_pwr=int(total_pwr/total_time)
+        )
+
+        fname = '{}_{}.tcx'.format(
+            self.sessions[0]['headers']['title'],
+            min_starttime
+        )
+
+        with open(fname, 'w') as output_file:
+            output_file.write(tcx_string)
+
+    def export_to_csv(self, fname=None):
+        pass
+
+    def _tcx_render_trackpoints(self, session=None, trackpoint_template=None):
+        trackpoint_template = trackpoint_template if trackpoint_template\
+            else TRACKPOINT_TEMPLATE
+        with open(trackpoint_template, 'r') as tcx_trackpoint_file:
             tcx_trackpoint = tcx_trackpoint_file.read()
 
-        start_ts = self.session['xAxis'][0]
-        timestamps = [(ts - start_ts)/1000. for ts in self.session['xAxis']]
-        x_axis = self.session['time']
-        heartrate = np.interp(x_axis, timestamps, self.session['hr'])
-        cadence = np.interp(x_axis, timestamps, self.session['cadence'])
-        power = np.interp(x_axis, timestamps, self.session['power'])
+        session = session if session else self.session[0]
+
+        start_ts = session['xAxis'][0]
+        timestamps = [(ts - start_ts)/1000. for ts in session['xAxis']]
+        x_axis = range(max(session['time']))
+        heartrate = np.interp(x_axis, timestamps, session['hr'])
+        cadence = np.interp(x_axis, timestamps, session['cadence'])
+        power = np.interp(x_axis, timestamps, session['power'])
 
         trackpoints = str()
         start = datetime.datetime.strptime(
-            self.session['headers']['startDate'], '%Y-%m-%d %H:%M:%S'
+            session['headers']['startDate'], '%Y-%m-%d %H:%M:%S'
         )
 
         for t, hr, cad, pwr in zip(x_axis, heartrate, cadence, power):
@@ -49,48 +99,34 @@ class Workout:
             trkp = trkp.replace('{POWER}', str(int(pwr)))
             trackpoints += trkp
 
-        tcx_base = tcx_base.replace('{TRACKPOINTS}', trackpoints)
-        tcx_base = tcx_base.replace(
-            '{ACTIVITY_ID}', start.isoformat()+'Z'
-        )
-        tcx_base = tcx_base.replace(
-            '{LAP_STARTTIME}','"'+ start.isoformat()+'Z"'
-        )
-        tcx_base = tcx_base.replace(
-            '{TOTAL_TIME_SECONDS}', str(int(float(self.session['headers']['timeTotal'])))
-        )
-        tcx_base = tcx_base.replace(
-            '{DISTANCE_METERS}', str(0.0)
-        )
-        tcx_base = tcx_base.replace(
-            '{MAXIMUMSPEED}', str(0.0)
-        )
-        tcx_base = tcx_base.replace(
-            '{CALORIES}', str(0)
-        )
-        tcx_base = tcx_base.replace(
-            '{AVERAGE_HEARTRATE}', self.session['headers']['hrAvg']
-        )
-        tcx_base = tcx_base.replace(
-            '{MAXIMUM_HEARTRATE}', self.session['headers']['hrPeak']
-        )
-        tcx_base = tcx_base.replace(
-            '{AVERAGE_CADENCE}', self.session['headers']['cadence']
-        )
-        tcx_base = tcx_base.replace(
-            '{AVERAGE_WATTS}', self.session['headers']['powerAvg']
-        )
-        tcx_base = tcx_base.replace(
-            '{AVERAGE_SPEED}', str(0)
-        )
+        return trackpoints
         
-        fname = '{}_{}.tcx'.format(
-            self.session['headers']['title'],
-            self.session['headers']['title']
-        )
+    def _tcx_render_base(self, trackpoints, start_time, total_time, avg_hr,
+                         max_hr, avg_cad, avg_pwr, dist=0.0,
+                         cal=0, avg_spd=0.0, max_spd=0.0,
+                         base_template=None):
 
-        with open(fname, 'w') as output_file:
-            output_file.write(tcx_base)
+        base_template = base_template if base_template\
+            else BASE_TEMPLATE
 
-    def export_to_csv(self, fname=None):
-        pass
+        with open(base_template, 'r') as tcx_base_file:
+            tcx_base = tcx_base_file.read()
+        repl_dict = {
+            '{TRACKPOINTS}': trackpoints,
+            '{ACTIVITY_ID}': start_time+'Z',
+            '{LAP_STARTTIME}': '"'+start_time+'Z"',
+            '{TOTAL_TIME_SECONDS}': str(total_time),
+            '{DISTANCE_METERS}': str(dist),
+            '{MAXIMUMSPEED}': str(max_spd),
+            '{CALORIES}': str(cal),
+            '{AVERAGE_HEARTRATE}': str(avg_hr),
+            '{MAXIMUM_HEARTRATE}': str(max_hr),
+            '{AVERAGE_CADENCE}': str(avg_cad),
+            '{AVERAGE_WATTS}': str(avg_pwr),
+            '{AVERAGE_SPEED}': str(avg_spd)
+        }
+
+        for key, val in repl_dict.items():
+            tcx_base = tcx_base.replace(key, val)
+
+        return tcx_base
