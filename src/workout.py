@@ -26,7 +26,7 @@ class Workout:
         else:
             sessions = self.sessions
         
-        trackpoints = str()
+        trackpoints = dict()
         min_starttime = datetime.datetime.now()
         total_time = 0.0
         total_hr = 0.0
@@ -35,7 +35,8 @@ class Workout:
         total_pwr = 0
 
         for session in sessions:
-            trackpoints += self._tcx_render_trackpoints(session)
+            session_start, session_trackpoints = self._tcx_render_trackpoints(session)
+            trackpoints[session_start] = session_trackpoints
 
             session_start = datetime.datetime.strptime(
                 session['headers']['startDate'], '%Y-%m-%d %H:%M:%S'
@@ -50,8 +51,14 @@ class Workout:
             total_cad += float(session['headers']['cadence'])*duration
             total_pwr += float(session['headers']['powerAvg'])*duration
 
+        # Multiple session trackpoint ordering
+        trackpoints_string = str()
+        while trackpoints:
+            min_session = min(trackpoints.keys())
+            trackpoints_string += trackpoints.pop(min_session)
+
         tcx_string = self._tcx_render_base(
-            trackpoints=trackpoints,
+            trackpoints=trackpoints_string,
             start_time=min_starttime.isoformat(),
             total_time=int(total_time),
             avg_hr=int(total_hr/total_time),
@@ -86,6 +93,12 @@ class Workout:
         cadence = np.interp(x_axis, timestamps, session['cadence'])
         power = np.interp(x_axis, timestamps, session['power'])
 
+        # Some padding to prevent interpolation of data after merging
+        x_axis = [-2, -1] + list(x_axis) + [len(list(x_axis)), len(list(x_axis))+1]
+        heartrate = [0, 0] + list(heartrate) + [0, 0]
+        cadence = [0, 0] + list(cadence) + [0, 0]
+        power = [0, 0] + list(power) + [0, 0]
+
         trackpoints = str()
         start = datetime.datetime.strptime(
             session['headers']['startDate'], '%Y-%m-%d %H:%M:%S'
@@ -99,7 +112,7 @@ class Workout:
             trkp = trkp.replace('{POWER}', str(int(pwr)))
             trackpoints += trkp
 
-        return trackpoints
+        return start, trackpoints
         
     def _tcx_render_base(self, trackpoints, start_time, total_time, avg_hr,
                          max_hr, avg_cad, avg_pwr, dist=0.0,
